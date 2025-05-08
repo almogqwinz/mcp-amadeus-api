@@ -48,7 +48,7 @@ def search_flight_offers(
     nonStop: bool = None,
     currencyCode: str = None,
     maxPrice: int = None,
-    max: int = 5
+    max: int = 250
 ) -> str:
     """
     Search for flight offers using the Amadeus API
