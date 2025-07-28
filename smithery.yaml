@@ -13,22 +13,28 @@ startCommand:
   type: http
   configSchema:
     type: object
+    title: Amadeus API Configuration
+    description: Configuration required to connect to the Amadeus API
     required:
       - amadeusClientId
       - amadeusClientSecret
     properties:
       amadeusClientId:
         type: string
-        description: Amadeus API Client ID (used as AMADEUS_CLIENT_ID)
+        title: Amadeus Client ID
+        description: Your Amadeus API Client ID (get from https://developers.amadeus.com)
       amadeusClientSecret:
         type: string
-        description: Amadeus API Client Secret (used as AMADEUS_CLIENT_SECRET)
+        title: Amadeus Client Secret
+        description: Your Amadeus API Client Secret
+        format: password
       amadeusHostname:
         type: string
-        description: Amadeus API hostname - 'test' for testing or 'production' for live API
+        title: API Environment
+        description: Amadeus API environment to use
         enum: ["test", "production"]
         default: "test"
   exampleConfig:
-    amadeusClientId: your_dummy_client_id
-    amadeusClientSecret: your_dummy_client_secret
+    amadeusClientId: your_amadeus_client_id
+    amadeusClientSecret: your_amadeus_client_secret
     amadeusHostname: test

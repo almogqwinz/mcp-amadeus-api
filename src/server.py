@@ -195,8 +195,38 @@ if __name__ == "__main__":
         
         try:
             async def run_http():
-                print("Calling mcp.run_streamable_http_async()...")
-                await mcp.run_streamable_http_async()
+                print("Creating HTTP app with middleware...")
+                
+                # Create the HTTP app and add middleware for query parameter parsing
+                app = mcp.streamable_http_app()
+                
+                # Add middleware to parse query parameters and set environment variables
+                @app.middleware("http")
+                async def config_middleware(request, call_next):
+                    # Extract configuration from query parameters
+                    query_params = dict(request.query_params)
+                    
+                    # Apply Amadeus configuration from query parameters to environment
+                    if 'amadeusClientId' in query_params:
+                        os.environ['AMADEUS_CLIENT_ID'] = query_params['amadeusClientId']
+                        print(f"✅ Applied AMADEUS_CLIENT_ID from query params")
+                    if 'amadeusClientSecret' in query_params:
+                        os.environ['AMADEUS_CLIENT_SECRET'] = query_params['amadeusClientSecret']
+                        print(f"✅ Applied AMADEUS_CLIENT_SECRET from query params")
+                    if 'amadeusHostname' in query_params:
+                        os.environ['AMADEUS_HOSTNAME'] = query_params['amadeusHostname']
+                        print(f"✅ Applied AMADEUS_HOSTNAME: {query_params['amadeusHostname']}")
+                    
+                    # Continue processing the request
+                    response = await call_next(request)
+                    return response
+                
+                # Start the server with uvicorn
+                import uvicorn
+                config = uvicorn.Config(app, host=host, port=port, log_level="info")
+                server = uvicorn.Server(config)
+                print("Starting HTTP server with query parameter support...")
+                await server.serve()
             
             asyncio.run(run_http())
         except Exception as e:
