@@ -42,6 +42,10 @@ async def health_check(request):
     from starlette.responses import JSONResponse
     return JSONResponse({"status": "healthy", "service": "amadeus-mcp-api"})
 
+
+
+
+
 @mcp.tool()
 def search_flight_offers(
     originLocationCode: str,

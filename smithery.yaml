@@ -8,47 +8,8 @@ build:
   dockerfile: "Dockerfile"
   dockerBuildPath: "."
 
-# Start command configuration
+# Configuration schema for HTTP deployments (when deployed to Smithery)
 startCommand:
-  # For local development, use stdio
-  type: stdio
-  configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    type: object
-    required:
-      - amadeusClientId
-      - amadeusClientSecret
-    properties:
-      amadeusClientId:
-        type: string
-        description: Amadeus API Client ID (used as AMADEUS_CLIENT_ID)
-      amadeusClientSecret:
-        type: string
-        description: Amadeus API Client Secret (used as AMADEUS_CLIENT_SECRET)
-      amadeusHostname:
-        type: string
-        description: Amadeus API hostname - 'test' for testing or 'production' for live API
-        enum: ["test", "production"]
-        default: "test"
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({
-      command: 'python',
-      args: ['src/server.py'],
-      env: {
-        AMADEUS_CLIENT_ID: config.amadeusClientId,
-        AMADEUS_CLIENT_SECRET: config.amadeusClientSecret,
-        AMADEUS_HOSTNAME: config.amadeusHostname || 'test'
-      }
-    })
-  exampleConfig:
-    amadeusClientId: your_dummy_client_id
-    amadeusClientSecret: your_dummy_client_secret
-    amadeusHostname: test
-
-# HTTP deployment configuration
-httpCommand:
   type: http
   configSchema:
     type: object
