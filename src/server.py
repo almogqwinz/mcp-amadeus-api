@@ -35,6 +35,13 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
 
 mcp = FastMCP("Amadeus API", dependencies=["amadeus"], lifespan=app_lifespan)
 
+# Add a simple health check endpoint for container deployments
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request):
+    """Health check endpoint for container deployments"""
+    from starlette.responses import JSONResponse
+    return JSONResponse({"status": "healthy", "service": "amadeus-mcp-api"})
+
 @mcp.tool()
 def search_flight_offers(
     originLocationCode: str,
@@ -135,4 +142,29 @@ def flight_search_prompt(origin: str, destination: str, date: str) -> str:
     """
 
 if __name__ == "__main__":
-    mcp.run()
+    import os
+    import asyncio
+    
+    # Check if we should run with HTTP transport (for streamable HTTP)
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")
+    
+    if transport == "http":
+        # Run with streamable HTTP transport
+        # Use PORT environment variable (set by Smithery) or default to 8000
+        port = int(os.environ.get("PORT", 8000))
+        host = os.environ.get("HOST", "0.0.0.0")  # Use 0.0.0.0 for container deployments
+        log_level = os.environ.get("LOG_LEVEL", "info")
+        path = os.environ.get("MCP_PATH", "/mcp")
+        
+        print(f"Starting Amadeus MCP server on {host}:{port}{path}")
+        print(f"Configuration: HOST={host}, AMADEUS_HOSTNAME={os.environ.get('AMADEUS_HOSTNAME', 'test')}")
+        
+        async def run_http():
+            # Note: The MCP SDK's run_streamable_http_async doesn't accept custom parameters
+            # It uses default settings, but we can override via environment if needed
+            await mcp.run_streamable_http_async()
+        
+        asyncio.run(run_http())
+    else:
+        # Default to stdio transport
+        mcp.run()

@@ -1,6 +1,16 @@
 # Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
 
+# Runtime configuration for deployments
+runtime: "container"
+
+# Build configuration for Custom Deploy
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
+
+# Start command configuration
 startCommand:
+  # For local development, use stdio
   type: stdio
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
@@ -32,6 +42,31 @@ startCommand:
         AMADEUS_HOSTNAME: config.amadeusHostname || 'test'
       }
     })
+  exampleConfig:
+    amadeusClientId: your_dummy_client_id
+    amadeusClientSecret: your_dummy_client_secret
+    amadeusHostname: test
+
+# HTTP deployment configuration
+httpCommand:
+  type: http
+  configSchema:
+    type: object
+    required:
+      - amadeusClientId
+      - amadeusClientSecret
+    properties:
+      amadeusClientId:
+        type: string
+        description: Amadeus API Client ID (used as AMADEUS_CLIENT_ID)
+      amadeusClientSecret:
+        type: string
+        description: Amadeus API Client Secret (used as AMADEUS_CLIENT_SECRET)
+      amadeusHostname:
+        type: string
+        description: Amadeus API hostname - 'test' for testing or 'production' for live API
+        enum: ["test", "production"]
+        default: "test"
   exampleConfig:
     amadeusClientId: your_dummy_client_id
     amadeusClientSecret: your_dummy_client_secret
