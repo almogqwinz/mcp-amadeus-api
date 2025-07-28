@@ -14,15 +14,18 @@ class AppContext:
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
     """Manage Amadeus client lifecycle"""
-    api_key = os.environ.get("AMADEUS_API_KEY")
-    api_secret = os.environ.get("AMADEUS_API_SECRET")
+    # Support both old and new environment variable names for backward compatibility
+    api_key = os.environ.get("AMADEUS_CLIENT_ID") or os.environ.get("AMADEUS_API_KEY")
+    api_secret = os.environ.get("AMADEUS_CLIENT_SECRET") or os.environ.get("AMADEUS_API_SECRET")
+    hostname = os.environ.get("AMADEUS_HOSTNAME", "test")
 
     if not api_key or not api_secret:
-        raise ValueError("AMADEUS_API_KEY and AMADEUS_API_SECRET must be set as environment variables")
+        raise ValueError("AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET must be set as environment variables")
 
     amadeus_client = Client(
         client_id=api_key,
-        client_secret=api_secret
+        client_secret=api_secret,
+        hostname=hostname
     )
 
     try:

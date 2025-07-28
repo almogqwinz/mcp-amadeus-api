@@ -11,10 +11,15 @@ startCommand:
     properties:
       amadeusClientId:
         type: string
-        description: Amadeus API Client ID (used as AMADEUS_API_KEY)
+        description: Amadeus API Client ID (used as AMADEUS_CLIENT_ID)
       amadeusClientSecret:
         type: string
-        description: Amadeus API Client Secret (used as AMADEUS_API_SECRET)
+        description: Amadeus API Client Secret (used as AMADEUS_CLIENT_SECRET)
+      amadeusHostname:
+        type: string
+        description: Amadeus API hostname - 'test' for testing or 'production' for live API
+        enum: ["test", "production"]
+        default: "test"
   commandFunction:
     # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
     |-
@@ -22,10 +27,12 @@ startCommand:
       command: 'python',
       args: ['src/server.py'],
       env: {
-        AMADEUS_API_KEY: config.amadeusClientId,
-        AMADEUS_API_SECRET: config.amadeusClientSecret
+        AMADEUS_CLIENT_ID: config.amadeusClientId,
+        AMADEUS_CLIENT_SECRET: config.amadeusClientSecret,
+        AMADEUS_HOSTNAME: config.amadeusHostname || 'test'
       }
     })
   exampleConfig:
     amadeusClientId: your_dummy_client_id
     amadeusClientSecret: your_dummy_client_secret
+    amadeusHostname: test

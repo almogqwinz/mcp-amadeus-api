@@ -21,6 +21,7 @@ Retrieve flight options between two locations for specified dates.
 > → ✈️ Returns available flight options with details like departure time, arrival time, airline, and price.
 
 - Powered by Amadeus Flight Offers Search API
+- Configurable test/production endpoints
 - Requires origin, destination, number of tickets and travel date input
 
 ---
@@ -63,10 +64,31 @@ Then edit `.env` and add your API credentials:
 ``` bash
 AMADEUS_CLIENT_ID=your_client_id
 AMADEUS_CLIENT_SECRET=your_client_secret
+AMADEUS_HOSTNAME=test
 ```
+
+**Configuration Options:**
+- `AMADEUS_CLIENT_ID`: Your Amadeus API Client ID
+- `AMADEUS_CLIENT_SECRET`: Your Amadeus API Client Secret  
+- `AMADEUS_HOSTNAME`: API endpoint to use - `test` for testing (default) or `production` for live API
 
 Sign up on [https://developers.amadeus.com/](https://developers.amadeus.com/) and create an app to obtain your `Client ID` and `Client Secret`.
 
+### 🌐 Environment Configuration
+
+The server supports both **test** and **production** Amadeus API endpoints:
+
+- **Test Environment** (`AMADEUS_HOSTNAME=test`): Use this for development and testing. The test environment provides:
+  - Free API access with test data
+  - No charges for API requests
+  - Limited to test flight data
+
+- **Production Environment** (`AMADEUS_HOSTNAME=production`): Use this for live applications. The production environment provides:
+  - Real, live flight data
+  - Pay-per-request pricing
+  - Full access to all Amadeus services
+
+> ⚠️ **Important**: Always use the test environment during development. Switch to production only when your application is ready for live data and you understand the associated costs.
 
 ### 3. Configure MCP Client
 
@@ -121,40 +143,41 @@ my case:
 
 After installation, the following tool is exposed to MCP clients:
 
-### `get_flight_offers`
+### `search_flight_offers`
 
-Retrieves flight offers from the Amadeus Flight Offers Search API.
+Retrieves flight offers from the Amadeus Flight Offers Search API. The API endpoint (test/production) is configurable via the `AMADEUS_HOSTNAME` environment variable.
 
 **Request:**
 
 ``` json
 {
   "action": "tool",
-  "name": "get_flight_offers",
+  "name": "search_flight_offers",
   "params": {
-  "origin": "JFK",
-  "destination": "LHR",
-  "departure_date": "2025-06-15"
+  "originLocationCode": "JFK",
+  "destinationLocationCode": "LHR", 
+  "departureDate": "2025-06-15",
+  "adults": 1
   }
 }
 ```
 
 
 **Parameters:**
-| Name            | Type     | Required | Description                                   | Example        |
-|-----------------|----------|----------|-----------------------------------------------|----------------|
-| origin          | string   | Yes      | IATA code of departure city/airport           | JFK            |
-| destination     | string   | Yes      | IATA code of destination city/airport         | LHR            |
-| departure_date  | string   | Yes      | Departure date (YYYY-MM-DD)                   | 2025-06-15     |
-| return_date     | string   | No       | Return date (YYYY-MM-DD). One-way if omitted  | 2025-06-20     |
-| adults          | integer  | Yes      | Number of adults (1-9). Default: 1            | 2              |
-| children        | integer  | No       | Number of children (2-11). Max total: 9       | 1              |
-| infants         | integer  | No       | Number of infants (≤2). Max: # of adults      | 1              |
-| travel_class    | string   | No       | Cabin class: ECONOMY, BUSINESS, etc.          | ECONOMY        |
-| non_stop        | boolean  | No       | If true, only non-stop flights. Default: false| true           |
-| currency_code   | string   | No       | Currency in ISO 4217 (e.g., USD)              | EUR            |
-| max_price       | integer  | No       | Max price per traveler                        | 500            |
-| max             | integer  | No       | Max number of offers. Default: 250            | 10             |
+| Name                     | Type     | Required | Description                                   | Example        |
+|--------------------------|----------|----------|-----------------------------------------------|----------------|
+| originLocationCode       | string   | Yes      | IATA code of departure city/airport           | JFK            |
+| destinationLocationCode  | string   | Yes      | IATA code of destination city/airport         | LHR            |
+| departureDate           | string   | Yes      | Departure date (YYYY-MM-DD)                   | 2025-06-15     |
+| adults                  | integer  | Yes      | Number of adults (1-9). Default: 1            | 2              |
+| returnDate              | string   | No       | Return date (YYYY-MM-DD). One-way if omitted  | 2025-06-20     |
+| children                | integer  | No       | Number of children (2-11). Max total: 9       | 1              |
+| infants                 | integer  | No       | Number of infants (≤2). Max: # of adults      | 1              |
+| travelClass             | string   | No       | Cabin class: ECONOMY, BUSINESS, etc.          | ECONOMY        |
+| nonStop                 | boolean  | No       | If true, only non-stop flights. Default: false| true           |
+| currencyCode            | string   | No       | Currency in ISO 4217 (e.g., USD)              | EUR            |
+| maxPrice                | integer  | No       | Max price per traveler                        | 500            |
+| max                     | integer  | No       | Max number of offers. Default: 250            | 10             |
 
 **Output:**
 Returns flight offers in JSON format with airline, times, duration, and pricing details from Amadeus.
