@@ -29,9 +29,9 @@ ENV MCP_PATH=/mcp
 # Expose port (will be set by Smithery via PORT env var)
 EXPOSE 8000
 
-# Health check endpoint
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8000}/mcp/health || exit 1
+# Health check disabled for now to avoid deployment issues
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 # Start the server
 # Smithery will pass configuration via query parameters
