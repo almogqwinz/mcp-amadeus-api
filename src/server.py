@@ -29,7 +29,7 @@ def get_amadeus_client() -> Client:
     except Exception as e:
         raise ValueError(f"Failed to initialize Amadeus client: {str(e)}")
 
-mcp = FastMCP("Amadeus API")
+mcp = FastMCP("Amadeus API", stateless_http=True)
 
 # Simple debug tool that doesn't require any credentials
 @mcp.tool()
