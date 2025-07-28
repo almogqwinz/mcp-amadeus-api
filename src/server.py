@@ -14,12 +14,8 @@ class AppContext:
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
     """Manage Amadeus client lifecycle with lazy loading"""
-    # For lazy loading: Don't create client during startup
-    # This allows Smithery to scan tools without requiring credentials
-    try:
-        yield AppContext(amadeus_client=None)  # Will be created lazily
-    finally:
-        pass
+    # Simplest possible lifespan for tool scanning compatibility
+    yield AppContext(amadeus_client=None)
 
 def get_amadeus_client(ctx: Context) -> Client:
     """Lazy-load Amadeus client with credentials from environment or query params"""
@@ -59,7 +55,13 @@ def get_amadeus_client(ctx: Context) -> Client:
     except Exception as e:
         raise ValueError(f"Failed to initialize Amadeus client: {str(e)}")
 
-mcp = FastMCP("Amadeus API", dependencies=["amadeus"], lifespan=app_lifespan)
+mcp = FastMCP("Amadeus API", lifespan=app_lifespan)
+
+# Simple debug tool that doesn't require any credentials
+@mcp.tool()
+def ping() -> str:
+    """Simple ping tool to test server connectivity"""
+    return "pong"
 
 # Add a simple health check endpoint for container deployments
 @mcp.custom_route("/health", methods=["GET"])
@@ -109,6 +111,7 @@ def search_flight_offers(
         maxPrice: Maximum price per traveler, positive integer with no decimals
         max: Maximum number of flight offers to return
     """
+    # Validate input parameters before attempting to get credentials
     if adults and not (1 <= adults <= 9):
         return json.dumps({"error": "Adults must be between 1 and 9"})
 
@@ -118,7 +121,24 @@ def search_flight_offers(
     if infants and adults and (infants > adults):
         return json.dumps({"error": "Number of infants cannot exceed number of adults"})
 
-    amadeus_client = get_amadeus_client(ctx)
+    # Try to get the Amadeus client - this is where credentials are validated
+    try:
+        amadeus_client = get_amadeus_client(ctx)
+    except ValueError as e:
+        # Return a user-friendly error if credentials are not configured
+        return json.dumps({
+            "error": "Configuration required",
+            "message": str(e),
+            "details": "Please ensure your Amadeus API credentials are properly configured."
+        })
+    except Exception as e:
+        # Handle any other initialization errors
+        return json.dumps({
+            "error": "Service initialization failed", 
+            "message": str(e)
+        })
+
+    # Build API parameters
     params = {}
     params["originLocationCode"] = originLocationCode
     params["destinationLocationCode"] = destinationLocationCode
@@ -146,6 +166,7 @@ def search_flight_offers(
     if max is not None:
         params["max"] = max
 
+    # Make the actual API call
     try:
         ctx.info(f"Searching flights from {originLocationCode} to {destinationLocationCode}")
         ctx.info(f"API parameters: {json.dumps(params)}")
