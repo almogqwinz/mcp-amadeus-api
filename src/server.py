@@ -1,61 +1,35 @@
 import os
 import json
 from amadeus import Client, ResponseError
-from dataclasses import dataclass
-from contextlib import asynccontextmanager
-from collections.abc import AsyncIterator
 
 from mcp.server.fastmcp import FastMCP, Context
 
-@dataclass
-class AppContext:
-    amadeus_client: Client | None
-
-@asynccontextmanager
-async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
-    """Manage Amadeus client lifecycle with lazy loading"""
-    # Simplest possible lifespan for tool scanning compatibility
-    yield AppContext(amadeus_client=None)
-
-def get_amadeus_client(ctx: Context) -> Client:
-    """Lazy-load Amadeus client with credentials from environment or query params"""
-    # First check if we already have a client in the context
-    if hasattr(ctx.request_context.lifespan_context, 'amadeus_client') and \
-       ctx.request_context.lifespan_context.amadeus_client is not None:
-        return ctx.request_context.lifespan_context.amadeus_client
-    
+def get_amadeus_client() -> Client:
+    """Create Amadeus client with credentials from environment"""
     # Support both old and new environment variable names for backward compatibility
     api_key = os.environ.get("AMADEUS_CLIENT_ID") or os.environ.get("AMADEUS_API_KEY")
     api_secret = os.environ.get("AMADEUS_CLIENT_SECRET") or os.environ.get("AMADEUS_API_SECRET")
     hostname = os.environ.get("AMADEUS_HOSTNAME", "test")
 
     if not api_key or not api_secret:
-        # During tool scanning, credentials might not be available
-        # Return a more user-friendly error that doesn't crash the server
         raise ValueError(
             "Amadeus API credentials not configured. "
             "Please provide your Amadeus API credentials when connecting to this server."
         )
 
-    # Log the configuration being used (without exposing secrets)
-    ctx.info(f"Initializing Amadeus client with hostname: {hostname}")
-
     try:
-        # Create and cache the client
+        # Create the client
         amadeus_client = Client(
             client_id=api_key,
             client_secret=api_secret,
             hostname=hostname
         )
         
-        # Cache it in the context for future use
-        ctx.request_context.lifespan_context.amadeus_client = amadeus_client
-        
         return amadeus_client
     except Exception as e:
         raise ValueError(f"Failed to initialize Amadeus client: {str(e)}")
 
-mcp = FastMCP("Amadeus API", lifespan=app_lifespan)
+mcp = FastMCP("Amadeus API")
 
 # Simple debug tool that doesn't require any credentials
 @mcp.tool()
@@ -123,7 +97,7 @@ def search_flight_offers(
 
     # Try to get the Amadeus client - this is where credentials are validated
     try:
-        amadeus_client = get_amadeus_client(ctx)
+        amadeus_client = get_amadeus_client()
     except ValueError as e:
         # Return a user-friendly error if credentials are not configured
         return json.dumps({
@@ -168,18 +142,18 @@ def search_flight_offers(
 
     # Make the actual API call
     try:
-        ctx.info(f"Searching flights from {originLocationCode} to {destinationLocationCode}")
-        ctx.info(f"API parameters: {json.dumps(params)}")
+        print(f"Searching flights from {originLocationCode} to {destinationLocationCode}")
+        print(f"API parameters: {json.dumps(params)}")
 
         response = amadeus_client.shopping.flight_offers_search.get(**params)
         return json.dumps(response.body)
     except ResponseError as error:
         error_msg = f"Amadeus API error: {str(error)}"
-        ctx.info(f"Error: {error_msg}")
+        print(f"Error: {error_msg}")
         return json.dumps({"error": error_msg})
     except Exception as e:
         error_msg = f"Unexpected error: {str(e)}"
-        ctx.info(f"Error: {error_msg}")
+        print(f"Error: {error_msg}")
         return json.dumps({"error": error_msg})
 
 @mcp.prompt()
