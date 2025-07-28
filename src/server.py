@@ -170,6 +170,16 @@ if __name__ == "__main__":
     import os
     import asyncio
     
+    print("=== Amadeus MCP Server Starting ===")
+    print(f"Python version: {os.sys.version}")
+    print(f"Working directory: {os.getcwd()}")
+    print(f"Environment variables:")
+    for key in ['MCP_TRANSPORT', 'PORT', 'HOST', 'AMADEUS_CLIENT_ID', 'AMADEUS_CLIENT_SECRET']:
+        value = os.environ.get(key, 'NOT_SET')
+        if 'SECRET' in key:
+            value = 'SET' if value != 'NOT_SET' else 'NOT_SET'
+        print(f"  {key}={value}")
+    
     # Check if we should run with HTTP transport (for streamable HTTP)
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
     
@@ -178,17 +188,26 @@ if __name__ == "__main__":
         # Use PORT environment variable (set by Smithery) or default to 8000
         port = int(os.environ.get("PORT", 8000))
         host = os.environ.get("HOST", "0.0.0.0")  # Use 0.0.0.0 for container deployments
-        log_level = os.environ.get("LOG_LEVEL", "info")
-        path = os.environ.get("MCP_PATH", "/mcp")
         
-        print(f"Starting Amadeus MCP server on {host}:{port}{path}")
-        print(f"Configuration: HOST={host}, AMADEUS_HOSTNAME={os.environ.get('AMADEUS_HOSTNAME', 'test')}")
+        print(f"Starting Amadeus MCP server in HTTP mode")
+        print(f"Server will bind to: {host}:{port}")
+        print("Available tools: ping, search_flight_offers")
         
-        async def run_http():
-            # Use the standard MCP SDK method for now to test basic lazy loading
-            await mcp.run_streamable_http_async()
-        
-        asyncio.run(run_http())
+        try:
+            async def run_http():
+                print("Calling mcp.run_streamable_http_async()...")
+                await mcp.run_streamable_http_async()
+            
+            asyncio.run(run_http())
+        except Exception as e:
+            print(f"ERROR: Failed to start HTTP server: {e}")
+            import traceback
+            traceback.print_exc()
     else:
-        # Default to stdio transport
-        mcp.run()
+        print("Starting in STDIO mode")
+        try:
+            mcp.run()
+        except Exception as e:
+            print(f"ERROR: Failed to start STDIO server: {e}")
+            import traceback
+            traceback.print_exc()
