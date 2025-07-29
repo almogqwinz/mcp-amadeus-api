@@ -44,8 +44,29 @@ async def health_check(request):
     from starlette.responses import JSONResponse
     return JSONResponse({"status": "healthy", "service": "amadeus-mcp-api"})
 
-
-
+# Add debug endpoint to see what parameters we're receiving
+@mcp.custom_route("/debug", methods=["GET"])
+async def debug_endpoint(request):
+    """Debug endpoint to see what parameters are being received"""
+    from starlette.responses import JSONResponse
+    
+    query_params = dict(request.query_params)
+    headers = dict(request.headers)
+    
+    # Get current environment variables
+    env_vars = {
+        "AMADEUS_CLIENT_ID": os.environ.get("AMADEUS_CLIENT_ID", "NOT_SET"),
+        "AMADEUS_CLIENT_SECRET": "SET" if os.environ.get("AMADEUS_CLIENT_SECRET") else "NOT_SET",
+        "AMADEUS_HOSTNAME": os.environ.get("AMADEUS_HOSTNAME", "NOT_SET"),
+    }
+    
+    return JSONResponse({
+        "message": "Debug info for Amadeus MCP Server",
+        "query_parameters": query_params,
+        "environment_variables": env_vars,
+        "headers": {k: v for k, v in headers.items() if k.lower() in ['host', 'user-agent', 'referer', 'authorization']},
+        "server_status": "running"
+    })
 
 
 @mcp.tool()
@@ -206,16 +227,29 @@ if __name__ == "__main__":
                     # Extract configuration from query parameters
                     query_params = dict(request.query_params)
                     
+                    # Debug logging - show ALL query parameters received
+                    print(f"🔍 DEBUG: Request path: {request.url.path}")
+                    print(f"🔍 DEBUG: Query parameters received: {query_params}")
+                    print(f"🔍 DEBUG: Looking for: amadeusClientId, amadeusClientSecret, amadeusHostname")
+                    
                     # Apply Amadeus configuration from query parameters to environment
                     if 'amadeusClientId' in query_params:
                         os.environ['AMADEUS_CLIENT_ID'] = query_params['amadeusClientId']
                         print(f"✅ Applied AMADEUS_CLIENT_ID from query params")
+                    else:
+                        print(f"❌ amadeusClientId NOT found in query params")
+                        
                     if 'amadeusClientSecret' in query_params:
                         os.environ['AMADEUS_CLIENT_SECRET'] = query_params['amadeusClientSecret']
                         print(f"✅ Applied AMADEUS_CLIENT_SECRET from query params")
+                    else:
+                        print(f"❌ amadeusClientSecret NOT found in query params")
+                        
                     if 'amadeusHostname' in query_params:
                         os.environ['AMADEUS_HOSTNAME'] = query_params['amadeusHostname']
                         print(f"✅ Applied AMADEUS_HOSTNAME: {query_params['amadeusHostname']}")
+                    else:
+                        print(f"ℹ️ amadeusHostname not specified, using default")
                     
                     # Continue processing the request
                     response = await call_next(request)
