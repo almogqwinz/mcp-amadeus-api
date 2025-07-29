@@ -133,32 +133,41 @@ def search_flight_offers(
             "message": str(e)
         })
 
-    # Build API parameters
+    # Build API parameters with proper filtering to avoid Amadeus API 400 errors
     params = {}
     params["originLocationCode"] = originLocationCode
     params["destinationLocationCode"] = destinationLocationCode
     params["departureDate"] = departureDate
     params["adults"] = adults
 
+    # Only include optional parameters when they have meaningful values
     if returnDate:
         params["returnDate"] = returnDate
-    if children is not None:
+    
+    # Don't send children/infants if they are 0 - Amadeus API rejects these
+    if children is not None and children > 0:
         params["children"] = children
-    if infants is not None:
+    if infants is not None and infants > 0:
         params["infants"] = infants
+    
     if travelClass:
         params["travelClass"] = travelClass
-    if includedAirlineCodes:
+    
+    # Don't send empty airline codes - Amadeus API rejects empty strings
+    if includedAirlineCodes and includedAirlineCodes.strip():
         params["includedAirlineCodes"] = includedAirlineCodes
-    if excludedAirlineCodes:
+    if excludedAirlineCodes and excludedAirlineCodes.strip():
         params["excludedAirlineCodes"] = excludedAirlineCodes
-    if nonStop is not None:
+    
+    # Only send nonStop when it's True - Amadeus API rejects nonStop: false
+    if nonStop is True:
         params["nonStop"] = nonStop
+    
     if currencyCode:
         params["currencyCode"] = currencyCode
-    if maxPrice is not None:
+    if maxPrice is not None and maxPrice > 0:
         params["maxPrice"] = maxPrice
-    if max is not None:
+    if max is not None and max > 0:
         params["max"] = max
 
     # Make the actual API call
