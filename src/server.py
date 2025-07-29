@@ -230,26 +230,64 @@ if __name__ == "__main__":
                     # Debug logging - show ALL query parameters received
                     print(f"🔍 DEBUG: Request path: {request.url.path}")
                     print(f"🔍 DEBUG: Query parameters received: {query_params}")
-                    print(f"🔍 DEBUG: Looking for: amadeusClientId, amadeusClientSecret, amadeusHostname")
                     
-                    # Apply Amadeus configuration from query parameters to environment
-                    if 'amadeusClientId' in query_params:
-                        os.environ['AMADEUS_CLIENT_ID'] = query_params['amadeusClientId']
-                        print(f"✅ Applied AMADEUS_CLIENT_ID from query params")
+                    # Check for Smithery's base64-encoded config parameter
+                    if 'config' in query_params:
+                        try:
+                            import base64
+                            import json
+                            
+                            # Decode the base64-encoded JSON config
+                            config_b64 = query_params['config']
+                            decoded_bytes = base64.b64decode(config_b64)
+                            decoded_string = decoded_bytes.decode('utf-8')
+                            config_data = json.loads(decoded_string)
+                            
+                            print(f"✅ Decoded Smithery config parameter")
+                            print(f"🔍 Config contains: {list(config_data.keys())}")
+                            
+                            # Apply Amadeus configuration from decoded config
+                            if 'amadeusClientId' in config_data:
+                                os.environ['AMADEUS_CLIENT_ID'] = config_data['amadeusClientId']
+                                print(f"✅ Applied AMADEUS_CLIENT_ID from Smithery config")
+                            
+                            if 'amadeusClientSecret' in config_data:
+                                os.environ['AMADEUS_CLIENT_SECRET'] = config_data['amadeusClientSecret']
+                                print(f"✅ Applied AMADEUS_CLIENT_SECRET from Smithery config")
+                            
+                            if 'amadeusHostname' in config_data:
+                                os.environ['AMADEUS_HOSTNAME'] = config_data['amadeusHostname']
+                                print(f"✅ Applied AMADEUS_HOSTNAME: {config_data['amadeusHostname']}")
+                            else:
+                                # Default to test environment if not specified
+                                os.environ['AMADEUS_HOSTNAME'] = 'test'
+                                print(f"ℹ️ Using default AMADEUS_HOSTNAME: test")
+                                
+                        except Exception as e:
+                            print(f"❌ Error parsing Smithery config: {e}")
+                    
+                    # Fallback: Check for individual query parameters (for backwards compatibility)
                     else:
-                        print(f"❌ amadeusClientId NOT found in query params")
+                        print(f"🔍 No 'config' parameter found, checking individual parameters...")
                         
-                    if 'amadeusClientSecret' in query_params:
-                        os.environ['AMADEUS_CLIENT_SECRET'] = query_params['amadeusClientSecret']
-                        print(f"✅ Applied AMADEUS_CLIENT_SECRET from query params")
-                    else:
-                        print(f"❌ amadeusClientSecret NOT found in query params")
-                        
-                    if 'amadeusHostname' in query_params:
-                        os.environ['AMADEUS_HOSTNAME'] = query_params['amadeusHostname']
-                        print(f"✅ Applied AMADEUS_HOSTNAME: {query_params['amadeusHostname']}")
-                    else:
-                        print(f"ℹ️ amadeusHostname not specified, using default")
+                        if 'amadeusClientId' in query_params:
+                            os.environ['AMADEUS_CLIENT_ID'] = query_params['amadeusClientId']
+                            print(f"✅ Applied AMADEUS_CLIENT_ID from individual query params")
+                        else:
+                            print(f"❌ amadeusClientId NOT found in query params")
+                            
+                        if 'amadeusClientSecret' in query_params:
+                            os.environ['AMADEUS_CLIENT_SECRET'] = query_params['amadeusClientSecret']
+                            print(f"✅ Applied AMADEUS_CLIENT_SECRET from individual query params")
+                        else:
+                            print(f"❌ amadeusClientSecret NOT found in query params")
+                            
+                        if 'amadeusHostname' in query_params:
+                            os.environ['AMADEUS_HOSTNAME'] = query_params['amadeusHostname']
+                            print(f"✅ Applied AMADEUS_HOSTNAME: {query_params['amadeusHostname']}")
+                        else:
+                            print(f"ℹ️ amadeusHostname not specified, using default: test")
+                            os.environ['AMADEUS_HOSTNAME'] = 'test'
                     
                     # Continue processing the request
                     response = await call_next(request)
