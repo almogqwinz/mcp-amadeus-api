@@ -1,5 +1,6 @@
 import os
 import json
+from typing import Optional
 from amadeus import Client, ResponseError
 
 from mcp.server.fastmcp import FastMCP, Context
@@ -76,15 +77,15 @@ def search_flight_offers(
     departureDate: str,
     adults: int,
     ctx: Context,
-    returnDate: str = None,
-    children: int = None,
-    infants: int = None,
-    travelClass: str = None,
-    includedAirlineCodes: str = None,
-    excludedAirlineCodes: str = None,
-    nonStop: bool = None,
-    currencyCode: str = None,
-    maxPrice: int = None,
+    returnDate: Optional[str] = None,
+    children: Optional[int] = None,
+    infants: Optional[int] = None,
+    travelClass: Optional[str] = None,
+    includedAirlineCodes: Optional[str] = None,
+    excludedAirlineCodes: Optional[str] = None,
+    nonStop: Optional[bool] = None,
+    currencyCode: Optional[str] = None,
+    maxPrice: Optional[int] = None,
     max: int = 250
 ) -> str:
     """
